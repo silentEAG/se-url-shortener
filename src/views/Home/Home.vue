@@ -1,6 +1,6 @@
 <template>
   <div id="main-se">
-    <el-row style="padding-bottom: 15px; padding-top: 8%">
+    <el-row style="padding-bottom: 15px; padding-top: 6%">
       <el-col>
         <h1>输入让你无语的长链接</h1>
       </el-col>
@@ -8,12 +8,21 @@
     <el-row style="padding-bottom: 18px">
       <el-col>
         <el-input size="large" style="max-width: 70%;"
-                  v-model="input" placeholder="Please input url">
+                  v-model="input" placeholder="Please input url"
+                  @keyup.enter="moveToDescription">
           <template #prepend>{{http_prefix}}</template>
         </el-input>
       </el-col>
     </el-row>
-    <el-row style="padding-bottom: 18px">
+    <el-row style="padding-bottom: 18px; position: relative" justify="center" :gutter=20>
+      <el-space wrap style="position:relative;">
+      <el-col>
+        <el-input size="large" id="descriptionInput"
+                  v-model="description" placeholder="new url shorten"
+                  :suffix-icon="Tickets">
+          <template #prepend>Description</template>
+        </el-input>
+      </el-col>
       <el-col>
         <el-button-group>
           <el-button round size="large" type="primary" @click="submit" :icon="Check">
@@ -24,14 +33,16 @@
           </el-button>
         </el-button-group>
       </el-col>
+      </el-space>
     </el-row>
     <el-row class="result-box">
       <el-col>
         <el-card v-if="url_table.length !== 0" style="position: relative;">
-          <el-table  :data="url_table" max-height="300" style="text-align: center; width: 780px" stripe class="result-table">
+          <el-table  :data="url_table" max-height="300" :default-sort="{ prop: 'time', order: 'descending' }"
+                     style="text-align: center; width: 780px" stripe class="result-table">
             <el-table-column prop="time" label="Time" width="180" />
             <el-table-column prop="shorten_url" label="ShortenUrl" width="250" />
-            <el-table-column prop="tag" label="Tag" width="200" />
+            <el-table-column prop="description" label="Description" width="200" />
             <el-table-column label="Operations" width="150">
               <template #default="scope">
                 <el-button size="small"
@@ -50,21 +61,23 @@
 </template>
 
 <script setup>
-import {ref, watch} from 'vue'
+import {nextTick, ref, watch} from 'vue'
 import {ElMessage} from "element-plus";
 import {getShortenUrl} from '@/api'
 import {getCurrentTime} from '@/utils/time'
 import {getUrlPrefix} from "@/utils";
-import { Check } from '@element-plus/icons-vue'
+import {Check, Tickets} from '@element-plus/icons-vue'
 import useClipboard from 'vue-clipboard3'
 
+const { toClipboard } = useClipboard()
 const http_prefix = ref('https://')
 const input = ref('')
+const description = ref('')
 const url_table = ref([]);
-
 const handleCopy = async (row) => {
   try {
-    useClipboard(row.shorten_url)
+    console.log(row.shorten_url)
+    await toClipboard(row.shorten_url)
     send_success_msg("复制成功")
   } catch (e) {
     send_error_msg("复制失败")
@@ -73,9 +86,13 @@ const handleCopy = async (row) => {
 }
 
 const handleDelete = (index, row) => {
-  console.log(index, row)
+  url_table.value = url_table.value.filter(item => item.shorten_url !== row.shorten_url)
 }
 
+const moveToDescription = async () => {
+  await nextTick()
+  document.getElementById('descriptionInput').focus()
+}
 
 watch(input, (val, old) => {
   if (val.startsWith("https://")) {
@@ -102,8 +119,7 @@ function isExist(url) {
   const url_list = url_table.value.map(item => {
     return item.original_url
   })
-  const index = url_list.indexOf(url)
-  return index === -1 ? 0 : 1
+  return url_list.indexOf(url)
 }
 
 const send_error_msg = (msg) => {
@@ -118,6 +134,12 @@ const send_success_msg = (msg) => {
     type: 'success',
   })
 }
+const getDescription = () => {
+  if (description.value.length === 0) {
+    return 'new url shorten'
+  }
+  return description.value
+}
 function submit() {
   // console.log(input.value)
   if (!isValidLength(input.value)) {
@@ -128,7 +150,7 @@ function submit() {
     send_error_msg("请输入正确长链接")
     return
   }
-  if (isExist(input.value)) {
+  if (isExist(input.value) !== -1) {
     send_error_msg("该长链接已存在缓存中")
     return;
   }
@@ -138,8 +160,14 @@ function submit() {
       time: getCurrentTime(),
       shorten_url: res.shorten_url,
       original_url: input.value,
-      tag: "new url-shorten"
+      description: getDescription()
     })
+    //主页面显示最近6次的查询
+    if (url_table.value.length > 6) {
+      url_table.value.shift()
+    }
+    input.value = ''
+    description.value = ''
     // console.log(res)
   })
 }
