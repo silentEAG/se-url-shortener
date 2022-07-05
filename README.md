@@ -1,6 +1,6 @@
 # se url shortener frontend project
 
-Develope with Vue 3 in Vite. 
+Develop with Vue 3 in Vite. 
 CORS errors should be solved by server (or just using nginx for proxying :>).
 
 ![](https://image.silente.top/img/cover2.png)
