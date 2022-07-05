@@ -7,7 +7,7 @@
     </el-row>
     <el-row style="padding-bottom: 18px">
       <el-col>
-        <el-input size="large" style="max-width: 70%;"
+        <el-input size="large" style="max-width: 70%;" id="urlInput"
                   v-model="input" placeholder="Please input url"
                   @keyup.enter="moveToDescription">
           <template #prepend>{{http_prefix}}</template>
@@ -19,6 +19,7 @@
       <el-col>
         <el-input size="large" id="descriptionInput"
                   v-model="description" placeholder="new url shorten"
+                  @keyup.enter="getSubmit"
                   :suffix-icon="Tickets">
           <template #prepend>Description</template>
         </el-input>
@@ -37,24 +38,26 @@
     </el-row>
     <el-row class="result-box">
       <el-col>
-        <el-card v-if="url_table.length !== 0" style="position: relative;">
-          <el-table  :data="url_table" max-height="300" :default-sort="{ prop: 'time', order: 'descending' }"
-                     style="text-align: center; width: 780px" stripe class="result-table">
-            <el-table-column prop="time" label="Time" width="180" />
-            <el-table-column prop="shorten_url" label="ShortenUrl" width="250" />
-            <el-table-column prop="description" label="Description" width="200" />
-            <el-table-column label="Operations" width="150">
-              <template #default="scope">
-                <el-button size="small"
-                           type="primary"
-                           @click="handleCopy(scope.row)">Copy</el-button>
-                <el-button size="small"
-                           type="danger"
-                           @click="handleDelete(scope.$index, scope.row)">Delete</el-button>
-              </template>
-            </el-table-column>
-          </el-table>
-        </el-card>
+        <transition name="el-fade-in-linear">
+          <el-card v-if="url_table.length !== 0" style="position: relative;">
+            <el-table  :data="url_table" max-height="300" :default-sort="{ prop: 'time', order: 'descending' }"
+                       style="text-align: center; width: 760px" stripe class="result-table">
+              <el-table-column prop="time" label="Time" width="180" />
+              <el-table-column prop="shorten_url" label="ShortenUrl" width="250" />
+              <el-table-column prop="description" label="Description" width="180" />
+              <el-table-column label="Operations" width="150">
+                <template #default="scope">
+                  <el-button size="small"
+                             type="primary"
+                             @click="handleCopy(scope.row)">Copy</el-button>
+                  <el-button size="small"
+                             type="danger"
+                             @click="handleDelete(scope.$index, scope.row)">Delete</el-button>
+                </template>
+              </el-table-column>
+            </el-table>
+          </el-card>
+        </transition>
       </el-col>
     </el-row>
   </div>
@@ -140,7 +143,11 @@ const getDescription = () => {
   }
   return description.value
 }
-function submit() {
+const getSubmit = async (e) => {
+  e.srcElement.blur();
+  await submit()
+}
+async function submit() {
   // console.log(input.value)
   if (!isValidLength(input.value)) {
     send_error_msg("长链接长度应保证大于等于18并小于1024")
@@ -169,6 +176,7 @@ function submit() {
     input.value = ''
     description.value = ''
     // console.log(res)
+    document.getElementById('urlInput').focus()
   })
 }
 
@@ -202,7 +210,7 @@ function isUrl (url) {
   left: 0;
   right: 0;
   bottom: 0;
-  max-width: 830px;
+  max-width: 810px;
 }
 .result-table {
   position: absolute;
